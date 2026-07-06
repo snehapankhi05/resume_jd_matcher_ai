@@ -1,0 +1,33 @@
+# Virtual Environment
+venv/
+
+# Environment Variables
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# ChromaDB
+data/chroma/
+
+# Uploaded Files
+data/uploads/
+
+# Generated Reports
+data/reports/
+
+# Node Modules
+frontend/node_modules/
+
+# Build
+frontend/dist/
