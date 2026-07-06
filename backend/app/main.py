@@ -1,24 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(
-    title="Resume JD Matcher API",
-    version="1.0.0",
-    description="Backend API for Resume-JD Matching using Hybrid RAG"
-)
+from backend.app.api.routes.upload import router as upload_router
+
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # React (Vite) frontend
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(upload_router)
 
-@app.get("/")
-def health_check():
+
+@app.get("/api/v1/health")
+def health():
     return {
-        "status": "success",
-        "message": "Backend is running successfully 🚀"
+        "status": "healthy"
     }

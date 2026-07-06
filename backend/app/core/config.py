@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     GROQ_API_KEY: str
 
-    MODEL_NAME: str
+    GROQ_MODEL: str
 
     EMBEDDING_MODEL: str
 
