@@ -44,7 +44,7 @@ async def upload_resume(
     with destination.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    collection_name = f"{session_id}_resume"
+    collection_name = "resume_collection"
 
     try:
 
