@@ -6,4 +6,21 @@ function UploadSection() {
     );
 }
 
+export default UploadSection;import ResumeUpload from "./ResumeUpload";
+import JDUpload from "./JDUpload";
+
+function UploadSection() {
+    return (
+        <div>
+
+            <ResumeUpload />
+
+            <hr />
+
+            <JDUpload />
+
+        </div>
+    );
+}
+
 export default UploadSection;
