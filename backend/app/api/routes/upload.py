@@ -1,7 +1,7 @@
 from pathlib import Path
 import shutil
 import uuid
-
+from backend.app.rag.pipeline import process_document
 from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from backend.app.core.config import settings
@@ -32,8 +32,16 @@ async def upload_resume(file: UploadFile = File(...)):
     with destination.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    collection_name = f"{session_id}_resume"
+
+    process_document(
+        file_path=str(destination),
+        collection_name=collection_name
+    )
+
     return {
         "message": "Resume uploaded successfully.",
         "session_id": session_id,
+        "collection_name": collection_name,
         "filename": filename
     }

@@ -6,4 +6,5 @@ langchain-huggingface
 python-multipart
 langchain-groq
 pypdf
+rank-bm25
 langchain-text-splitters
