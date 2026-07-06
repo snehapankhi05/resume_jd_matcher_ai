@@ -37,14 +37,15 @@ async def upload_jd(
     with destination.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    collection_name = f"{session_id}_jd"
+    collection_name = collection_name = "jd_collection"
 
     try:
 
         result = process_document(
-            file_path=str(destination),
-            collection_name=collection_name
-        )
+    file_path=str(destination),
+    collection_name=collection_name,
+    session_id=session_id
+)
 
     except DocumentValidationError as e:
 

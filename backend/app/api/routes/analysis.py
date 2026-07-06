@@ -12,16 +12,9 @@ router = APIRouter(
 class AnalysisRequest(BaseModel):
     session_id: str
 
-
 @router.post("/")
 async def analyze(request: AnalysisRequest):
 
-    try:
-        result = analyze_documents(request.session_id)
-        return result
+    result = analyze_documents(request.session_id)
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+    return result

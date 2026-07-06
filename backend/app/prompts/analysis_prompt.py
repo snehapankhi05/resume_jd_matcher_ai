@@ -8,17 +8,27 @@ Rules:
 - Do not assume missing information.
 - Generate concise, professional responses.
 - Return ONLY valid JSON.
+
+IMPORTANT:
+- Your response MUST start with {
+- Your response MUST end with }
+- Do not write "Here is the analysis".
+- Do not use markdown.
+- Do not use ```json.
+- Return raw JSON only.
 """
+
+
 USER_PROMPT = """
 Resume Context:
 {resume_context}
 
-----------------------------------------
+--------------------------------------------------
 
 Job Description Context:
 {jd_context}
 
-----------------------------------------
+--------------------------------------------------
 
 Backend Results
 
@@ -38,36 +48,41 @@ Matched Skills:
 Missing Skills:
 {missing_skills}
 
-----------------------------------------
+--------------------------------------------------
 
-Generate ONLY this JSON:
+Generate ONLY the following JSON:
 
-{
+{{
     "strengths": [],
     "weaknesses": [],
     "suggestions": [],
     "summary": "",
     "domain_match": true,
     "analysis_confidence": "High"
-}
+}}
 
 Requirements:
 
-1. Do NOT modify any backend-calculated scores.
-2. Do NOT invent skills or experience.
+1. Do NOT modify the backend-calculated scores.
+2. Do NOT invent skills, experience, education or certifications.
 3. Strengths must be directly supported by the Resume.
-4. Weaknesses must relate to missing or weak JD requirements.
+4. Weaknesses must correspond to missing or weak JD requirements.
 5. Suggestions must be practical, specific and prioritized.
 6. Summary must be under 80 words.
 7. If the Resume and JD belong to different domains:
-   - domain_match = false
-   - Explain this in the summary.
-8. If Resume Context or JD Context is empty:
-   - strengths = []
-   - weaknesses = []
-   - suggestions = []
-   - domain_match = false
-   - analysis_confidence = "Low"
-   - summary = "Insufficient information for analysis."
+   - Set "domain_match" to false.
+   - Mention the domain mismatch in the summary.
+8. If either Resume Context or JD Context is empty, return:
+
+{{
+    "strengths": [],
+    "weaknesses": [],
+    "suggestions": [],
+    "summary": "Insufficient information for analysis.",
+    "domain_match": false,
+    "analysis_confidence": "Low"
+}}
+
 9. Return ONLY valid JSON.
+10. Do NOT include markdown or any extra text outside the JSON object.
 """

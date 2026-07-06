@@ -47,11 +47,11 @@ async def upload_resume(
     collection_name = "resume_collection"
 
     try:
-
         result = process_document(
             file_path=str(destination),
-            collection_name=collection_name
-        )
+            collection_name=collection_name,
+            session_id=session_id
+)
 
     except DocumentValidationError as e:
 

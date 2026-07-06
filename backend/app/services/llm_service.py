@@ -1,5 +1,4 @@
 import json
-from urllib import response
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from sympy import content
@@ -48,5 +47,19 @@ def generate_analysis(
 
     elif content.startswith("```"):
         content = content.replace("```", "").strip()
+    print("\n" + "=" * 80)
+    print("RAW GROQ RESPONSE")
+    print(content)
+    print("=" * 80 + "\n")
+    try:
+        result = json.loads(content)
 
-    return json.loads(content)
+        print(result)
+
+        return result
+
+    except Exception as e:
+
+        print(content)
+
+        raise Exception(f"Invalid JSON returned by Groq: {e}")

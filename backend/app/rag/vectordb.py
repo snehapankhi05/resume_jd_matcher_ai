@@ -13,10 +13,10 @@ def create_vector_store(
     embedding_model = get_embedding_model()
 
     vector_store = Chroma.from_documents(
-        documents=documents,
-        embedding=embedding_model,
-        persist_directory=settings.CHROMA_DB_PATH,
-        collection_name=collection_name
-    )
+    documents=documents,
+    embedding=embedding_model,
+    persist_directory=settings.CHROMA_DB_PATH,
+    collection_name=collection_name
+)
 
     return vector_store
