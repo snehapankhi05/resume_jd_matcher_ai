@@ -1,25 +1,28 @@
-function UploadSection() {
-    return (
-        <div>
-            <h2>Upload Files</h2>
-        </div>
-    );
-}
+import { useState } from "react";
 
-export default UploadSection;import ResumeUpload from "./ResumeUpload";
+import ResumeUpload from "./ResumeUpload";
 import JDUpload from "./JDUpload";
 
 function UploadSection() {
+
+    const [sessionId, setSessionId] = useState("");
+
     return (
+
         <div>
 
-            <ResumeUpload />
+            <ResumeUpload
+                onResumeUploaded={setSessionId}
+            />
 
             <hr />
 
-            <JDUpload />
+            <JDUpload
+                sessionId={sessionId}
+            />
 
         </div>
+
     );
 }
 
