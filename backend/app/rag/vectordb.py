@@ -4,7 +4,12 @@ from backend.app.core.config import settings
 from backend.app.rag.embeddings import get_embedding_model
 
 
-def create_vector_store(documents, collection_name: str):
+def create_vector_store(
+    documents,
+    collection_name: str,
+    session_id: str
+):
+
     embedding_model = get_embedding_model()
 
     vector_store = Chroma.from_documents(
