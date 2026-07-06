@@ -1,8 +1,7 @@
 from pathlib import Path
 import shutil
-import uuid
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 
 from backend.app.core.config import settings
 from backend.app.rag.pipeline import process_document
@@ -14,37 +13,31 @@ router = APIRouter(
 )
 
 UPLOAD_PATH = Path(settings.UPLOAD_FOLDER)
+JD_PATH = UPLOAD_PATH / "jds"
 
-RESUME_PATH = UPLOAD_PATH / "resumes"
-
-RESUME_PATH.mkdir(parents=True, exist_ok=True)
+JD_PATH.mkdir(parents=True, exist_ok=True)
 
 
-@router.post("/resume")
-async def upload_resume(
+@router.post("/jd")
+async def upload_jd(
+    session_id: str = Form(...),
     file: UploadFile = File(...)
 ):
 
-    # Validate MIME Type
     if file.content_type != "application/pdf":
         raise HTTPException(
             status_code=400,
             detail="Only PDF files are allowed."
         )
 
-    # Generate Session ID
-    session_id = str(uuid.uuid4())
-
-    # Unique Filename
     filename = f"{session_id}_{file.filename}"
 
-    destination = RESUME_PATH / filename
+    destination = JD_PATH / filename
 
-    # Save File
     with destination.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    collection_name = f"{session_id}_resume"
+    collection_name = f"{session_id}_jd"
 
     try:
 
@@ -63,22 +56,10 @@ async def upload_resume(
             detail=str(e)
         )
 
-    except Exception as e:
-
-        if destination.exists():
-            destination.unlink()
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal Server Error : {str(e)}"
-        )
-
     return {
         "success": True,
-        "message": "Resume uploaded and processed successfully.",
-        "session_id": session_id,
+        "message": "JD uploaded successfully.",
         "collection_name": collection_name,
-        "filename": filename,
         "pages_processed": result["pages"],
         "chunks_created": result["chunks"]
     }

@@ -1,30 +1,36 @@
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from backend.app.prompts.analysis_prompt import SYSTEM_PROMPT
-from backend.app.rag.llm import get_llm
+from backend.app.rag.hybrid_search import hybrid_search
 
 
-def analyze_resume(resume_context, jd_context):
+def analyze_documents(session_id: str):
 
-    llm = get_llm()
+    """
+    Complete Resume-JD Analysis Pipeline
+    """
 
-    messages = [
-        SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(
-            content=f"""
-Resume Context:
+    # Step 1
+    # Load Resume Collection
 
-{resume_context}
+    # Step 2
+    # Load JD Collection
 
---------------------------------
+    # Step 3
+    # Hybrid Search
 
-Job Description Context:
+    # Step 4
+    # Skill Matching
 
-{jd_context}
-"""
-        )
-    ]
+    # Step 5
+    # Backend Scoring
 
-    response = llm.invoke(messages)
+    # Step 6
+    # Prompt Builder
 
-    return response.content
+    # Step 7
+    # Groq
+
+    # Step 8
+    # Merge Response
+
+    return {
+        "message": "Pipeline Ready"
+    }
