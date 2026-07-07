@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { uploadJD } from "../services/uploadService";
+import { uploadJD } from "../../services/uploadService";
 
 function JDUpload({ sessionId }) {
 

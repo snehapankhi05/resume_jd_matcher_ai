@@ -1,8 +1,8 @@
 import Navbar from "../../../frontend/src/components/Navbar";
-import UploadSection from "../../../frontend/src/components/UploadSection";
+import UploadSection from "../components/upload/UploadSection";
 import ProgressTracker from "../../../frontend/src/components/ProgressTracker";
-import AnalyzeButton from "../../../frontend/src/components/AnalyzeButton";
-import ResultsDashboard from "../../../frontend/src/components/ResultsDashboard";
+import AnalyzeButton from "../components/analysis/AnalyzeButton";
+import ResultsDashboard from "../components/analysis/ResultsDashboard";
 
 function Home() {
     return (

@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import ResumeUpload from "./ResumeUpload";
 import JDUpload from "./JDUpload";
-import AnalyzeButton from "./AnalyzeButton";
-import ResultsDashboard from "./ResultsDashboard";
+import AnalyzeButton from "../analysis/AnalyzeButton";
+import ResultsDashboard from "../analysis/ResultsDashboard";
 
 function UploadSection() {
 

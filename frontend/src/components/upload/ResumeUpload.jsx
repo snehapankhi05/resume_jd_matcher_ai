@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { uploadResume } from "../services/uploadService";
+import { uploadResume } from "../../services/uploadService";
 
 function ResumeUpload({ onResumeUploaded }) {
     const [file, setFile] = useState(null);
@@ -34,10 +34,15 @@ function ResumeUpload({ onResumeUploaded }) {
 
             console.error(error);
 
-            alert(
-                error.response?.data?.detail ||
-                "Resume upload failed."
-            );
+            console.log(error);
+
+            console.log(error.response);
+
+            console.log(error.response?.data);
+
+alert(
+    JSON.stringify(error.response?.data || error.message)
+);
 
         } finally {
 
