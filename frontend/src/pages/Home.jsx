@@ -1,6 +1,6 @@
 import Navbar from "../components/layout/Navbar";
 import UploadSection from "../components/upload/UploadSection";
-
+import Footer from "../components/layout/Footer";
 function Home() {
   return (
     <div className="min-h-screen bg-slate-100">
