@@ -1,11 +1,9 @@
-from difflib import SequenceMatcher
+from sklearn.metrics.pairwise import cosine_similarity
+
+from backend.app.rag.embeddings import get_embedding_model
 
 
 def calculate_skill_score(matched_skills, jd_skills):
-    """
-    Percentage of JD skills found in Resume.
-    """
-
     if not jd_skills:
         return 0
 
@@ -13,29 +11,26 @@ def calculate_skill_score(matched_skills, jd_skills):
 
 
 def calculate_semantic_similarity(resume_text, jd_text):
-    """
-    Simple semantic similarity.
-    Later we'll replace this with embedding similarity.
-    """
 
-    return round(
-        SequenceMatcher(
-            None,
-            resume_text.lower(),
-            jd_text.lower()
-        ).ratio() * 100,
-        2
-    )
+    embedding_model = get_embedding_model()
+
+    resume_embedding = embedding_model.embed_query(resume_text)
+
+    jd_embedding = embedding_model.embed_query(jd_text)
+
+    similarity = cosine_similarity(
+        [resume_embedding],
+        [jd_embedding]
+    )[0][0]
+
+    return round(similarity * 100, 2)
 
 
 def calculate_overall_score(skill_score, semantic_score):
-    """
-    Weighted Score
-    """
 
     return round(
-        (skill_score * 0.7) +
-        (semantic_score * 0.3),
+        (skill_score * 0.6) +
+        (semantic_score * 0.4),
         2
     )
 

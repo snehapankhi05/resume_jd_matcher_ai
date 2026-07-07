@@ -5,14 +5,9 @@ from backend.app.services.llm_service import generate_analysis
 
 
 def analyze_documents(session_id: str):
-    """
-    Complete Resume-JD Analysis Pipeline
-    """
 
-    # Query used for retrieval
     query = "skills experience education projects technologies"
 
-    # Step 1: Retrieve relevant context
     context = get_context(
         session_id=session_id,
         query=query
@@ -21,13 +16,11 @@ def analyze_documents(session_id: str):
     resume_context = context["resume_context"]
     jd_context = context["jd_context"]
 
-    # Step 2: Extract & Match Skills
     skills = extract_and_match_skills(
         resume_context,
         jd_context
     )
 
-    # Step 3: Calculate Scores
     scores = calculate_scores(
         matched_skills=skills["matched_skills"],
         jd_skills=skills["jd_skills"],
@@ -35,7 +28,6 @@ def analyze_documents(session_id: str):
         jd_text=jd_context
     )
 
-    # Step 4: LLM Analysis
     llm_response = generate_analysis(
         resume_context=resume_context,
         jd_context=jd_context,
@@ -44,7 +36,6 @@ def analyze_documents(session_id: str):
         missing_skills=skills["missing_skills"]
     )
 
-    # Step 5: Merge Results
     return {
         **scores,
         **skills,
