@@ -1,9 +1,19 @@
+import { useState } from "react";
 import Navbar from "../components/layout/Navbar";
-import UploadSection from "../components/upload/UploadSection";
 import ProgressTracker from "../components/upload/ProgressTracker";
+import UploadSection from "../components/upload/UploadSection";
 import Footer from "../components/layout/Footer";
 
 function Home() {
+
+  const [sessionId, setSessionId] = useState(null);
+  const [results, setResults] = useState(null);
+
+  function handleReset() {
+    setSessionId(null);
+    setResults(null);
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
 
@@ -13,7 +23,13 @@ function Home() {
 
         <ProgressTracker />
 
-        <UploadSection />
+        <UploadSection
+          sessionId={sessionId}
+          setSessionId={setSessionId}
+          results={results}
+          setResults={setResults}
+          onReset={handleReset}
+        />
 
       </div>
 

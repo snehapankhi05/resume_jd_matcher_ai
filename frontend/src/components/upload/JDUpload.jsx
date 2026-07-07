@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { uploadJD } from "../../services/uploadService";
-
+import { useRef } from "react";
 function JDUpload({ sessionId }) {
 
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
+  const inputRef = useRef(null);
 
   function handleFileChange(e) {
     setFile(e.target.files[0]);
@@ -74,6 +75,7 @@ function JDUpload({ sessionId }) {
       <label className="block">
 
   <input
+  ref={inputRef}
     type="file"
     accept=".pdf"
     onChange={handleFileChange}

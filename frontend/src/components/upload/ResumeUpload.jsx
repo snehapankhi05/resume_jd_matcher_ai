@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { uploadResume } from "../../services/uploadService";
-
+import { useRef } from "react";
 function ResumeUpload({ onResumeUploaded }) {
 
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
+  const inputRef = useRef(null);
 
   function handleFileChange(e) {
     setFile(e.target.files[0]);
@@ -67,6 +68,7 @@ function ResumeUpload({ onResumeUploaded }) {
       <label className="block">
 
   <input
+  ref={inputRef}
     type="file"
     accept=".pdf"
     onChange={handleFileChange}
