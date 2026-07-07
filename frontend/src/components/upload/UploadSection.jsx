@@ -2,42 +2,46 @@ import { useState } from "react";
 
 import ResumeUpload from "./ResumeUpload";
 import JDUpload from "./JDUpload";
+
 import AnalyzeButton from "../analysis/AnalyzeButton";
 import ResultsDashboard from "../analysis/ResultsDashboard";
 
 function UploadSection() {
+  const [sessionId, setSessionId] = useState("");
+  const [results, setResults] = useState(null);
 
-    const [sessionId, setSessionId] = useState("");
-    const [results, setResults] = useState(null);
+  return (
+    <>
+      <div className="grid md:grid-cols-2 gap-6">
 
-    return (
-        <div>
+        <ResumeUpload
+          onResumeUploaded={setSessionId}
+        />
 
-            <ResumeUpload
-                onResumeUploaded={setSessionId}
-            />
+        <JDUpload
+          sessionId={sessionId}
+        />
 
-            <hr />
+      </div>
 
-            <JDUpload
-                sessionId={sessionId}
-            />
+      <div className="mt-8 text-center">
 
-            <hr />
+        <AnalyzeButton
+          sessionId={sessionId}
+          setResults={setResults}
+        />
 
-            <AnalyzeButton
-                sessionId={sessionId}
-                setResults={setResults}
-            />
+      </div>
 
-            <hr />
+      <div className="mt-10">
 
-            <ResultsDashboard
-                results={results}
-            />
+        <ResultsDashboard
+          results={results}
+        />
 
-        </div>
-    );
+      </div>
+    </>
+  );
 }
 
 export default UploadSection;

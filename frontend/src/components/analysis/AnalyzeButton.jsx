@@ -3,61 +3,44 @@ import { analyzeResume } from "../../services/analysisService";
 
 function AnalyzeButton({ sessionId, setResults }) {
 
-    const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    async function handleAnalyze() {
+  async function handleAnalyze() {
 
-        if (!sessionId) {
-            alert("Upload Resume first.");
-            return;
-        }
+    if (!sessionId) {
+      alert("Upload Resume first");
+      return;
+    }
 
-        try {
+    try {
 
-            setLoading(true);
+      setLoading(true);
 
-            const data = await analyzeResume(sessionId);
+      const data = await analyzeResume(sessionId);
 
-            setResults(data);
+      setResults(data);
 
-        }
+    } catch (error) {
 
-        catch (error) {
+      alert(error.response?.data?.detail || "Analysis Failed");
 
-            console.error(error);
+    } finally {
 
-            alert(
-                error.response?.data?.detail ||
-                "Analysis failed."
-            );
-
-        }
-
-        finally {
-
-            setLoading(false);
-
-        }
+      setLoading(false);
 
     }
 
-    return (
+  }
 
-        <button
-            onClick={handleAnalyze}
-            disabled={loading}
-        >
-
-            {
-                loading
-                    ? "Analyzing..."
-                    : "Analyze Resume"
-            }
-
-        </button>
-
-    );
-
+  return (
+    <button
+      onClick={handleAnalyze}
+      disabled={loading}
+      className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-xl text-xl font-bold shadow-lg"
+    >
+      {loading ? "Analyzing..." : "🚀 Analyze Resume"}
+    </button>
+  );
 }
 
 export default AnalyzeButton;

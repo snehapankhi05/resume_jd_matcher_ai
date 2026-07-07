@@ -1,23 +1,16 @@
-import Navbar from "../../../frontend/src/components/Navbar";
+import Navbar from "../components/layout/Navbar";
 import UploadSection from "../components/upload/UploadSection";
-import ProgressTracker from "../../../frontend/src/components/ProgressTracker";
-import AnalyzeButton from "../components/analysis/AnalyzeButton";
-import ResultsDashboard from "../components/analysis/ResultsDashboard";
 
 function Home() {
-    return (
-        <>
-            <Navbar />
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <Navbar />
 
-            <ProgressTracker />
-
-            <UploadSection />
-
-            <AnalyzeButton />
-
-            <ResultsDashboard />
-        </>
-    );
+      <div className="max-w-7xl mx-auto p-8">
+        <UploadSection />
+      </div>
+    </div>
+  );
 }
 
 export default Home;

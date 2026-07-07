@@ -2,88 +2,85 @@ import { useState } from "react";
 import { uploadJD } from "../../services/uploadService";
 
 function JDUpload({ sessionId }) {
+  const [file, setFile] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-    const [file, setFile] = useState(null);
-    const [progress, setProgress] = useState(0);
-    const [loading, setLoading] = useState(false);
+  function handleFileChange(e) {
+    setFile(e.target.files[0]);
+  }
 
-    function handleFileChange(event) {
-        setFile(event.target.files[0]);
+  async function handleUpload() {
+
+    if (!sessionId) {
+      alert("Upload Resume first");
+      return;
     }
 
-    async function handleUpload() {
-
-        if (!sessionId) {
-            alert("Please upload Resume first.");
-            return;
-        }
-
-        if (!file) {
-            alert("Please select a JD PDF.");
-            return;
-        }
-
-        try {
-
-            setLoading(true);
-
-            await uploadJD(
-                file,
-                sessionId,
-                setProgress
-            );
-
-            alert("Job Description uploaded successfully!");
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert(
-                error.response?.data?.detail ||
-                "JD upload failed."
-            );
-
-        } finally {
-
-            setLoading(false);
-
-        }
+    if (!file) {
+      alert("Select a JD");
+      return;
     }
 
-    return (
+    try {
 
-        <div>
+      setLoading(true);
 
-            <h3>Upload Job Description</h3>
+      await uploadJD(
+        file,
+        sessionId,
+        setProgress
+      );
 
-            <input
-                type="file"
-                accept=".pdf"
-                onChange={handleFileChange}
-            />
+      alert("JD Uploaded Successfully");
 
-            {file && (
-                <p>{file.name}</p>
-            )}
+    } catch (error) {
 
-            <progress
-                value={progress}
-                max="100"
-            />
+      alert(error.response?.data?.detail || "Upload Failed");
 
-            <br /><br />
+    } finally {
 
-            <button
-                onClick={handleUpload}
-                disabled={loading}
-            >
-                {loading ? "Uploading..." : "Upload JD"}
-            </button>
+      setLoading(false);
 
-        </div>
+    }
+  }
 
-    );
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+
+      <h2 className="text-2xl font-bold mb-5">
+        💼 Upload Job Description
+      </h2>
+
+      <input
+        type="file"
+        accept=".pdf"
+        onChange={handleFileChange}
+        className="w-full border rounded-lg p-3"
+      />
+
+      {file && (
+        <p className="mt-4 text-gray-700">
+          {file.name}
+        </p>
+      )}
+
+      <progress
+        value={progress}
+        max="100"
+        className="w-full mt-4"
+      />
+
+      <button
+        onClick={handleUpload}
+        disabled={loading}
+        className="mt-5 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold"
+      >
+        {loading ? "Uploading..." : "Upload JD"}
+      </button>
+
+    </div>
+  );
 }
 
 export default JDUpload;
