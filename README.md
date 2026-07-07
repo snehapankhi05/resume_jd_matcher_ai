@@ -10,9 +10,7 @@ The application provides ATS-style match scores, identifies matched and missing 
 
 
 
-https://github.com/user-attachments/assets/e59033e9-3aa4-4adb-8822-c6ab6a7c97da
-
-
+https://github.com/user-attachments/assets/df7c14a7-388d-443c-9cc3-d1323de1ff9c
 
 ---
 
