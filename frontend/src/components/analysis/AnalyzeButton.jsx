@@ -34,12 +34,12 @@ function AnalyzeButton({ sessionId, setResults }) {
 
   return (
     <button
-      onClick={handleAnalyze}
-      disabled={loading}
-      className="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-xl text-xl font-bold shadow-lg"
-    >
-      {loading ? "Analyzing..." : "🚀 Analyze Resume"}
-    </button>
+  onClick={handleAnalyze}
+  disabled={loading}
+  className="px-10 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50"
+>
+  {loading ? "Analyzing..." : "🚀 Analyze Resume"}
+</button>
   );
 }
 
