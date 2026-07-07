@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/e59033e9-3aa4-4adb-8822-c6ab6a7c97da
 
 ## AI Insights
 
-![Insights](screenshots/results.png)
+![Insights](screenshots/result.png)
 
 ---
 
