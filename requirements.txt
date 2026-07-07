@@ -8,3 +8,9 @@ langchain-groq
 pypdf
 rank-bm25
 langchain-text-splitters
+axios
+react-router-dom
+react-icons
+tailwindcss @tailwindcss/vite
+react-circular-progressbar
+react-icons
