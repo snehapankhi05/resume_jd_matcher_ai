@@ -42,7 +42,7 @@ function ResultsDashboard({ results }) {
 
         <ScoreCard
           title="Semantic Score"
-          value={`${Math.round(results.semantic_similarity * 100)}%`}
+          value={`${results.semantic_similarity}%`}
         />
 
       </div>
