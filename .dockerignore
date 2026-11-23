@@ -1,0 +1,11 @@
+venv
+.git
+.env
+data
+**/__pycache__
+**/*.pyc
+**/*.bak
+frontend/node_modules
+frontend/dist
+evaluation/results
+agent-transcripts

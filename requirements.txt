@@ -5,21 +5,15 @@ pydantic
 pydantic-settings
 python-multipart
 
-langchain-community
 langchain-core
-langchain-chroma
 langchain-groq
-langchain-huggingface
 langchain-text-splitters
 
-chromadb
-
-sentence-transformers
+fastembed
 
 pypdf
 rank-bm25
 
-scikit-learn
 numpy
 
 # Observability + evaluation

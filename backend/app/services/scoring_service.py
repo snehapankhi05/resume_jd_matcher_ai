@@ -1,9 +1,19 @@
 import numpy as np
 from langsmith import traceable
-from sklearn.metrics.pairwise import cosine_similarity
 
 from backend.app.core.config import settings
 from backend.app.rag.embeddings import get_embedding_model
+
+
+def cosine_similarity(left, right):
+    """Cosine similarity of every row in `left` with every row in `right`."""
+    left = np.asarray(left, dtype=np.float32)
+    right = np.asarray(right, dtype=np.float32)
+    left_norm = np.linalg.norm(left, axis=1, keepdims=True)
+    right_norm = np.linalg.norm(right, axis=1, keepdims=True)
+    left_norm[left_norm == 0] = 1.0
+    right_norm[right_norm == 0] = 1.0
+    return (left / left_norm) @ (right / right_norm).T
 
 
 def calculate_skill_score(matched_skills, jd_skills, related_skills=None):

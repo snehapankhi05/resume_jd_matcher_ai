@@ -1,0 +1,32 @@
+# Free Render web service. No credit card.
+# After the blueprint is created, set GROQ_API_KEY in the Render dashboard.
+services:
+  - type: web
+    name: resume-jd-matcher
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-MiniLM-L6-v2
+      - key: CHROMA_DB_PATH
+        value: /tmp/matcher/chroma
+      - key: UPLOAD_FOLDER
+        value: /tmp/matcher/uploads
+      - key: REPORT_FOLDER
+        value: /tmp/matcher/reports
+      - key: MAX_FILE_SIZE_MB
+        value: "5"
+      - key: SKILL_EXTRACTION_MODE
+        value: rules
+      - key: SKILL_SCORE_WEIGHT
+        value: "0.6"
+      - key: LLM_TIMEOUT_SECONDS
+        value: "60"
+      - key: LANGSMITH_TRACING
+        value: "false"

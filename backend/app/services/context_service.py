@@ -1,5 +1,6 @@
-from langchain_community.retrievers import BM25Retriever
 from langsmith import traceable
+
+from backend.app.rag.bm25 import BM25Retriever
 
 from backend.app.rag.hybrid_search import hybrid_search
 from backend.app.rag.vectordb import (
