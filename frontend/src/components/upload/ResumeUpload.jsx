@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { uploadResume } from "../../services/uploadService";
-import { useRef } from "react";
+import { getErrorMessage } from "../../utils/errors";
+
 function ResumeUpload({ onResumeUploaded }) {
 
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
-  const inputRef = useRef(null);
 
   function handleFileChange(e) {
-    setFile(e.target.files[0]);
+    setFile(e.target.files[0] || null);
+    setProgress(0);
     setStatus(null);
   }
 
@@ -27,6 +28,7 @@ function ResumeUpload({ onResumeUploaded }) {
     try {
 
       setLoading(true);
+      setProgress(0);
 
       const response = await uploadResume(
         file,
@@ -44,9 +46,7 @@ function ResumeUpload({ onResumeUploaded }) {
 
       setStatus({
         type: "error",
-        message:
-          error.response?.data?.detail ||
-          "Upload failed."
+        message: getErrorMessage(error, "Upload failed.")
       });
 
     } finally {
@@ -68,7 +68,6 @@ function ResumeUpload({ onResumeUploaded }) {
       <label className="block">
 
   <input
-  ref={inputRef}
     type="file"
     accept=".pdf"
     onChange={handleFileChange}

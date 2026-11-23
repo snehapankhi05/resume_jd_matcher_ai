@@ -6,12 +6,26 @@ import Footer from "../components/layout/Footer";
 
 function Home() {
 
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState("");
+  const [jdUploaded, setJdUploaded] = useState(false);
   const [results, setResults] = useState(null);
 
-  function handleReset() {
-    setSessionId(null);
+  // Changing this key remounts the upload section, which clears the
+  // selected files without reloading the whole page.
+  const [resetKey, setResetKey] = useState(0);
+
+  function handleResumeUploaded(newSessionId) {
+    // A new resume means a new session: the JD and old results no longer apply.
+    setSessionId(newSessionId);
+    setJdUploaded(false);
     setResults(null);
+  }
+
+  function handleReset() {
+    setSessionId("");
+    setJdUploaded(false);
+    setResults(null);
+    setResetKey((key) => key + 1);
   }
 
   return (
@@ -21,12 +35,19 @@ function Home() {
 
       <div className="max-w-7xl mx-auto p-8">
 
-        <ProgressTracker />
+        <ProgressTracker
+          resumeDone={Boolean(sessionId)}
+          jdDone={jdUploaded}
+          analysisDone={Boolean(results)}
+        />
 
         <UploadSection
+          key={resetKey}
           sessionId={sessionId}
-          setSessionId={setSessionId}
+          jdUploaded={jdUploaded}
           results={results}
+          onResumeUploaded={handleResumeUploaded}
+          onJDUploaded={() => setJdUploaded(true)}
           setResults={setResults}
           onReset={handleReset}
         />

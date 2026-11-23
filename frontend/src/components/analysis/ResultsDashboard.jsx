@@ -2,42 +2,51 @@ import ScoreCard from "./ScoreCard";
 import SkillsList from "./SkillsList";
 import SummaryCard from "./SummaryCard";
 import CircularScore from "./CircularScore";
+
 function ResultsDashboard({ results }) {
+
   if (!results) {
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-10 mt-10 text-center">
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-10 mt-10 text-center">
 
-      <h2 className="text-2xl font-bold text-gray-600">
-        Upload Resume and JD to start analysis
-      </h2>
+        <h2 className="text-2xl font-bold text-gray-600">
+          Upload Resume and JD to start analysis
+        </h2>
 
-    </div>
-  );
-}
+      </div>
+    );
+  }
+
+  // When the JD contains none of the known skills, a technical score of
+  // 0% would be misleading, so it is shown as N/A.
+  const hasJdSkills = (results.jd_skills || []).length > 0;
 
   return (
     <div className="mt-10 space-y-8">
 
+      {results.domain_match === false && (
+        <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 rounded-xl p-4 font-medium">
+          ⚠️ The resume and the job description appear to belong to different domains.
+        </div>
+      )}
+
       <div className="grid md:grid-cols-3 gap-6">
+
         <div className="bg-white rounded-xl shadow-lg p-8">
 
-  <h2 className="text-3xl font-bold text-center mb-8">
-    Overall Match
-  </h2>
+          <h2 className="text-3xl font-bold text-center mb-8">
+            Overall Match
+          </h2>
 
-  <CircularScore
-    value={Math.round(results.overall_score)}
-  />
+          <CircularScore
+            value={Math.round(results.overall_score)}
+          />
 
-</div>
-        <ScoreCard
-          title="Overall Match"
-          value={`${results.overall_score}%`}
-        />
+        </div>
 
         <ScoreCard
           title="Technical Score"
-          value={`${results.technical_score}%`}
+          value={hasJdSkills ? `${results.technical_score}%` : "N/A"}
         />
 
         <ScoreCard

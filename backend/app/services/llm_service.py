@@ -1,7 +1,11 @@
 import json
+import logging
+import re
+from typing import List
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from sympy import content
+from langsmith import traceable
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from backend.app.prompts.analysis_prompt import (
     SYSTEM_PROMPT,
@@ -10,7 +14,85 @@ from backend.app.prompts.analysis_prompt import (
 
 from backend.app.rag.llm import get_llm
 
+logger = logging.getLogger(__name__)
 
+MAX_ATTEMPTS = 2
+
+
+class LLMAnalysisError(Exception):
+    """Raised when the LLM call fails or returns unusable output."""
+
+
+class LLMAnalysis(BaseModel):
+    """The only fields the LLM is allowed to contribute."""
+
+    strengths: List[str] = Field(default_factory=list)
+    weaknesses: List[str] = Field(default_factory=list)
+    suggestions: List[str] = Field(default_factory=list)
+    summary: str = ""
+    domain_match: bool = True
+    analysis_confidence: str = "Medium"
+
+    @field_validator("strengths", "weaknesses", "suggestions", mode="before")
+    @classmethod
+    def _clean_list(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            value = [value]
+        return [str(item).strip() for item in value if str(item).strip()]
+
+    @field_validator("analysis_confidence", mode="before")
+    @classmethod
+    def _clean_confidence(cls, value):
+        normalized = str(value).strip().capitalize()
+        return normalized if normalized in {"High", "Medium", "Low"} else "Medium"
+
+
+_DECODER = json.JSONDecoder(strict=False)
+
+
+def _extract_json(raw: str) -> dict:
+    """
+    Parse the model output, tolerating markdown fences, prose before/after
+    the object, and raw newlines/tabs inside strings.
+
+    The old version sliced from the first "{" to the LAST "}" and parsed
+    strictly, so any trailing text containing a brace, or a literal newline
+    inside a string value, raised an error. raw_decode reads exactly one
+    JSON object and ignores whatever follows it.
+    """
+
+    text = raw.strip()
+
+    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+
+    start = text.find("{")
+
+    if start == -1:
+        raise ValueError("No JSON object found in model output.")
+
+    data, _ = _DECODER.raw_decode(text[start:])
+
+    if not isinstance(data, dict):
+        raise ValueError("Model output is not a JSON object.")
+
+    return data
+
+
+def _response_text(response) -> str:
+    content = response.content
+
+    if isinstance(content, list):
+        return "".join(
+            part if isinstance(part, str) else part.get("text", "")
+            for part in content
+        )
+
+    return str(content)
+
+
+@traceable(name="generate_analysis", run_type="chain")
 def generate_analysis(
     resume_context: str,
     jd_context: str,
@@ -26,36 +108,42 @@ def generate_analysis(
         jd_context=jd_context,
         overall_score=scores["overall_score"],
         technical_score=scores["technical_score"],
-        experience_score=scores.get("experience_score", 0),
-        education_score=scores.get("education_score", 0),
         semantic_similarity=scores["semantic_similarity"],
-        matched_skills=", ".join(matched_skills),
-        missing_skills=", ".join(missing_skills),
+        matched_skills=", ".join(matched_skills) or "None",
+        missing_skills=", ".join(missing_skills) or "None",
     )
 
-    response = llm.invoke(
-        [
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=prompt),
-        ]
-    )
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=prompt),
+    ]
 
-    content = response.content.strip()
+    last_error = None
 
-    if content.startswith("```json"):
-        content = content.replace("```json", "").replace("```", "").strip()
+    for attempt in range(1, MAX_ATTEMPTS + 1):
 
-    elif content.startswith("```"):
-        content = content.replace("```", "").strip()
-    
-    try:
-        result = json.loads(content)
+        try:
+            response = llm.invoke(messages)
+        except Exception as exc:
+            # Network / auth / rate-limit problems: details go to the log,
+            # never to the client.
+            logger.exception("Groq request failed")
+            raise LLMAnalysisError("LLM request failed.") from exc
 
-        
+        try:
+            data = _extract_json(_response_text(response))
 
-        return result
+            return LLMAnalysis(**data).model_dump()
 
-    except Exception as e:
+        except (ValueError, ValidationError, TypeError) as exc:
+            last_error = exc
+            logger.warning(
+                "Invalid LLM output (attempt %d/%d): %s",
+                attempt,
+                MAX_ATTEMPTS,
+                exc
+            )
 
-        
-        raise Exception(f"Invalid JSON returned by Groq: {e}")
+    raise LLMAnalysisError(
+        "LLM returned an invalid response."
+    ) from last_error

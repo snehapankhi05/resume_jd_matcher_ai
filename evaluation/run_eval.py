@@ -1,0 +1,188 @@
+"""
+Run from the project root (the folder that contains `backend/`):
+
+    python -m evaluation.run_eval                 # LangSmith experiment (needs LANGSMITH_API_KEY)
+    python -m evaluation.run_eval --local         # no LangSmith, prints a table
+    python -m evaluation.run_eval --no-judge      # skip the two LLM-judge metrics
+    python -m evaluation.run_eval --sync          # re-upload the dataset after editing dataset.py
+    python -m evaluation.run_eval --prefix chunk600   # name the experiment (e.g. after a config change)
+    python -m evaluation.run_eval --set unseen        # held-out skills the vocabulary does not know
+    python -m evaluation.run_eval --set all --skill-mode rules   # compare with --skill-mode hybrid
+
+The pipeline runs against a throw-away Chroma folder, so your real data/chroma is untouched.
+"""
+
+import argparse
+import atexit
+import json
+import os
+import shutil
+import sys
+import tempfile
+import time
+import uuid
+from pathlib import Path
+
+# --- must happen before any `backend` import (settings are read at import time)
+_TMP = tempfile.mkdtemp(prefix="rjm_eval_chroma_")
+os.environ["CHROMA_DB_PATH"] = _TMP
+atexit.register(shutil.rmtree, _TMP, ignore_errors=True)
+
+if "--local" in sys.argv:
+    os.environ["LANGSMITH_TRACING"] = "false"
+
+if "--skill-mode" in sys.argv:
+    os.environ["SKILL_EXTRACTION_MODE"] = sys.argv[sys.argv.index("--skill-mode") + 1]
+
+from langchain_core.documents import Document  # noqa: E402
+
+from backend.app.core.config import settings  # noqa: E402
+from backend.app.core.tracing import setup_tracing  # noqa: E402
+from backend.app.rag.splitter import split_documents  # noqa: E402
+from backend.app.rag.vectordb import create_vector_store, get_vector_store  # noqa: E402
+from backend.app.services.analysis_service import run_analysis  # noqa: E402
+from evaluation import evaluators as ev  # noqa: E402
+from backend.app.services.skill_service import extraction_mode  # noqa: E402
+from evaluation.dataset import EXAMPLES as MAIN_EXAMPLES  # noqa: E402
+from evaluation.dataset_unseen import UNSEEN_EXAMPLES  # noqa: E402
+
+EXAMPLES = MAIN_EXAMPLES  # replaced in __main__ according to --set
+
+DATASET_NAME = "resume-jd-matcher-eval-v1"  # suffixed per --set
+
+
+def _ingest(collection: str, session_id: str, text: str):
+    chunks = split_documents([Document(page_content=text, metadata={"page": 1, "source": "eval"})])
+    for c in chunks:
+        c.metadata["session_id"] = session_id
+    create_vector_store(chunks, collection, session_id)
+
+
+def target(inputs: dict) -> dict:
+    """Same code path as POST /analysis, minus the PDF upload."""
+    sid = str(uuid.uuid4())
+    _ingest("resume_collection", sid, inputs["resume_text"])
+    _ingest("jd_collection", sid, inputs["jd_text"])
+    try:
+        t0 = time.perf_counter()
+        out = run_analysis(sid, include_context=True)
+        out["latency_s"] = round(time.perf_counter() - t0, 2)
+        return out
+    finally:
+        for col in ("resume_collection", "jd_collection"):
+            get_vector_store(col).delete(where={"session_id": sid})
+
+
+def _config_metadata() -> dict:
+    return {
+        "groq_model": settings.GROQ_MODEL,
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "skill_score_weight": settings.SKILL_SCORE_WEIGHT,
+        "judge_model": os.getenv("JUDGE_MODEL") or settings.GROQ_MODEL,
+        "skill_extraction_mode": extraction_mode(),
+        "chunk_size": 800,
+        "chunk_overlap": 150,
+    }
+
+
+def run_langsmith(args, evaluators):
+    from langsmith import Client, evaluate
+
+    if not setup_tracing():
+        sys.exit("Set LANGSMITH_TRACING=true and LANGSMITH_API_KEY in .env first.")
+
+    client = Client()
+    if args.sync and client.has_dataset(dataset_name=DATASET_NAME):
+        client.delete_dataset(dataset_name=DATASET_NAME)
+    if not client.has_dataset(dataset_name=DATASET_NAME):
+        ds = client.create_dataset(DATASET_NAME, description="Hand-labelled resume/JD pairs")
+        client.create_examples(
+            inputs=[e["inputs"] for e in EXAMPLES],
+            outputs=[e["outputs"] for e in EXAMPLES],
+            metadata=[e["metadata"] for e in EXAMPLES],
+            dataset_id=ds.id,
+        )
+        print(f"Created dataset '{DATASET_NAME}' with {len(EXAMPLES)} examples")
+
+    evaluate(
+        target,
+        data=DATASET_NAME,
+        evaluators=evaluators,
+        summary_evaluators=ev.SUMMARY,
+        experiment_prefix=args.prefix,
+        max_concurrency=1,  # Groq rate limits
+        metadata=_config_metadata(),
+        client=client,
+    )
+
+
+def _flatten(res):
+    if isinstance(res, dict) and "results" in res:
+        return res["results"]
+    return [res]
+
+
+def run_local(args, evaluators):
+    rows, outs, refs = [], [], []
+    for ex in EXAMPLES:
+        print(f"-> {ex['inputs']['name']}")
+        out = target(ex["inputs"])
+        outs.append(out)
+        refs.append(ex["outputs"])
+        scores = {}
+        for fn in evaluators:
+            try:
+                kw = {k: v for k, v in dict(inputs=ex["inputs"], outputs=out,
+                      reference_outputs=ex["outputs"]).items() if k in fn.__code__.co_varnames[:fn.__code__.co_argcount]}
+                for r in _flatten(fn(**kw)):
+                    scores[r["key"]] = r["score"]
+                    if r.get("comment") and r["score"] in (0, 0.0) or (r.get("comment", "").startswith("not in resume")):
+                        print(f"     {r['key']}: {r['comment']}")
+            except Exception as exc:  # judge/network failure should not kill the run
+                print(f"     ! {fn.__name__} failed: {exc}")
+        rows.append((ex["inputs"]["name"], out["overall_score"], scores))
+
+    print("\n=== per example ===")
+    for name, overall, s in rows:
+        print(f"{name:36s} overall={overall:6.2f}  band_ok={s.get('score_in_expected_band')}  "
+              f"jd_f1={s.get('jd_skill_f1')}  ground={s.get('strength_skill_grounding')}")
+
+    keys = sorted({k for _, _, s in rows for k in s})
+    print("\n=== mean per metric ===")
+    for k in keys:
+        vals = [s[k] for _, _, s in rows if isinstance(s.get(k), (int, float))]
+        print(f"{k:34s} {sum(vals) / len(vals):8.3f}")
+
+    print("\n=== dataset-level ===")
+    for fn in ev.SUMMARY:
+        r = fn(outputs=outs, reference_outputs=refs)
+        print(f"{r['key']:34s} {r['score']:8.3f}")
+
+    out_dir = Path(__file__).parent / "results"
+    out_dir.mkdir(exist_ok=True)
+    (out_dir / "latest.json").write_text(json.dumps(
+        {"config": _config_metadata(), "rows": [{"name": n, "overall": o, "scores": s} for n, o, s in rows]},
+        indent=2), encoding="utf-8")
+    print(f"\nSaved {out_dir / 'latest.json'}")
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--local", action="store_true")
+    ap.add_argument("--no-judge", action="store_true")
+    ap.add_argument("--sync", action="store_true")
+    ap.add_argument("--prefix", default="baseline")
+    ap.add_argument("--set", choices=["main", "unseen", "all"], default="main",
+                    help="main = original cases, unseen = held-out skills, all = both")
+    ap.add_argument("--skill-mode", choices=["rules", "hybrid"], default=None,
+                    help="rules = vocabulary + rule mining; hybrid = plus verified LLM extraction")
+    a = ap.parse_args()
+
+    EXAMPLES = {"main": MAIN_EXAMPLES, "unseen": UNSEEN_EXAMPLES,
+                "all": MAIN_EXAMPLES + UNSEEN_EXAMPLES}[a.set]
+    if a.set != "main":
+        DATASET_NAME = f"resume-jd-matcher-eval-v1-{a.set}"
+    a.prefix = f"{a.prefix}-{extraction_mode()}"
+
+    evals = list(ev.PER_EXAMPLE) + ([] if a.no_judge else list(ev.JUDGES))
+    run_local(a, evals) if a.local else run_langsmith(a, evals)

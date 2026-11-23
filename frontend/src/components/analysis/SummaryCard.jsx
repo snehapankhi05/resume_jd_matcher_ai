@@ -1,6 +1,6 @@
 import { FaLightbulb, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 
-function SummaryCard({ title, items }) {
+function SummaryCard({ title, items = [] }) {
 
   let Icon = FaLightbulb;
 

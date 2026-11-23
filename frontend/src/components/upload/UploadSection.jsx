@@ -1,23 +1,18 @@
-import { useState } from "react";
-
 import ResumeUpload from "./ResumeUpload";
 import JDUpload from "./JDUpload";
 
 import AnalyzeButton from "../analysis/AnalyzeButton";
 import ResultsDashboard from "../analysis/ResultsDashboard";
 
-function UploadSection() {
-
-  const [sessionId, setSessionId] = useState("");
-  const [results, setResults] = useState(null);
-
-  function handleReset() {
-    setSessionId("");
-    setResults(null);
-
-    // Reload page to clear selected files
-    window.location.reload();
-  }
+function UploadSection({
+  sessionId,
+  jdUploaded,
+  results,
+  onResumeUploaded,
+  onJDUploaded,
+  setResults,
+  onReset,
+}) {
 
   return (
     <>
@@ -25,11 +20,15 @@ function UploadSection() {
       <div className="grid md:grid-cols-2 gap-6">
 
         <ResumeUpload
-          onResumeUploaded={setSessionId}
+          onResumeUploaded={onResumeUploaded}
         />
 
+        {/* key: uploading a new resume creates a new session, so the JD
+            uploader starts fresh for it */}
         <JDUpload
+          key={sessionId || "no-session"}
           sessionId={sessionId}
+          onJDUploaded={onJDUploaded}
         />
 
       </div>
@@ -38,11 +37,12 @@ function UploadSection() {
 
         <AnalyzeButton
           sessionId={sessionId}
+          ready={Boolean(sessionId) && jdUploaded}
           setResults={setResults}
         />
 
         <button
-          onClick={handleReset}
+          onClick={onReset}
           className="px-10 py-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition-all duration-300"
         >
           🔄 Reset

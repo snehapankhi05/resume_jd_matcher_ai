@@ -1,12 +1,21 @@
-from pathlib import Path
-import shutil
+import logging
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from backend.app.core.config import settings
 from backend.app.rag.pipeline import process_document
-from backend.app.utils.document_validator import DocumentValidationError
+from backend.app.utils.document_validator import (
+    DocumentValidationError,
+    FileTooLargeError,
+)
+from backend.app.utils.uploads import (
+    safe_display_name,
+    save_pdf_upload,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/upload",
@@ -20,57 +29,56 @@ RESUME_PATH = UPLOAD_PATH / "resumes"
 RESUME_PATH.mkdir(parents=True, exist_ok=True)
 
 
+# Plain "def" (not "async def"): saving, PDF parsing and embedding are
+# blocking work, and FastAPI runs "def" endpoints in a worker thread so
+# they do not freeze the event loop for other requests.
 @router.post("/resume")
-async def upload_resume(
+def upload_resume(
     file: UploadFile = File(...)
 ):
-
-    # Validate MIME Type
-    if file.content_type != "application/pdf":
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF files are allowed."
-        )
 
     # Generate Session ID
     session_id = str(uuid.uuid4())
 
-    # Unique Filename
-    filename = f"{session_id}_{file.filename}"
-
-    destination = RESUME_PATH / filename
-
-    # Save File
-    with destination.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # The client's file name is never used in the path (path traversal).
+    destination = RESUME_PATH / f"{session_id}.pdf"
 
     collection_name = "resume_collection"
 
     try:
+        save_pdf_upload(file, destination, settings.MAX_FILE_SIZE_MB)
+
         result = process_document(
             file_path=str(destination),
             collection_name=collection_name,
             session_id=session_id
-)
+        )
+
+    except FileTooLargeError as e:
+
+        raise HTTPException(
+            status_code=413,
+            detail=str(e)
+        )
 
     except DocumentValidationError as e:
 
-        if destination.exists():
-            destination.unlink()
+        destination.unlink(missing_ok=True)
 
         raise HTTPException(
             status_code=400,
             detail=str(e)
         )
 
-    except Exception as e:
+    except Exception:
 
-        if destination.exists():
-            destination.unlink()
+        logger.exception("Resume processing failed")
+
+        destination.unlink(missing_ok=True)
 
         raise HTTPException(
             status_code=500,
-            detail=f"Internal Server Error : {str(e)}"
+            detail="Could not process the resume. Please try again."
         )
 
     return {
@@ -78,7 +86,7 @@ async def upload_resume(
         "message": "Resume uploaded and processed successfully.",
         "session_id": session_id,
         "collection_name": collection_name,
-        "filename": filename,
+        "filename": safe_display_name(file.filename),
         "pages_processed": result["pages"],
         "chunks_created": result["chunks"]
     }

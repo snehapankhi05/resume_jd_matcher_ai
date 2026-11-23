@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { uploadJD } from "../../services/uploadService";
-import { useRef } from "react";
-function JDUpload({ sessionId }) {
+import { getErrorMessage } from "../../utils/errors";
+
+function JDUpload({ sessionId, onJDUploaded }) {
 
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
-  const inputRef = useRef(null);
 
   function handleFileChange(e) {
-    setFile(e.target.files[0]);
+    setFile(e.target.files[0] || null);
+    setProgress(0);
     setStatus(null);
   }
 
@@ -35,12 +36,17 @@ function JDUpload({ sessionId }) {
     try {
 
       setLoading(true);
+      setProgress(0);
 
       await uploadJD(
         file,
         sessionId,
         setProgress
       );
+
+      if (onJDUploaded) {
+        onJDUploaded();
+      }
 
       setStatus({
         type: "success",
@@ -51,9 +57,7 @@ function JDUpload({ sessionId }) {
 
       setStatus({
         type: "error",
-        message:
-          error.response?.data?.detail ||
-          "Upload failed."
+        message: getErrorMessage(error, "Upload failed.")
       });
 
     } finally {
@@ -75,7 +79,6 @@ function JDUpload({ sessionId }) {
       <label className="block">
 
   <input
-  ref={inputRef}
     type="file"
     accept=".pdf"
     onChange={handleFileChange}

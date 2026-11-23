@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -6,6 +7,22 @@ from pypdf import PdfReader
 class DocumentValidationError(Exception):
     """Custom exception for document validation."""
     pass
+
+
+class FileTooLargeError(DocumentValidationError):
+    """Raised when an uploaded file exceeds the configured size limit."""
+    pass
+
+
+def validate_session_id(session_id: str) -> str:
+    """
+    Session IDs are server-generated UUIDs. Rejecting anything else keeps
+    client-supplied values out of file names and database filters.
+    """
+    try:
+        return str(uuid.UUID(str(session_id)))
+    except (ValueError, AttributeError, TypeError):
+        raise DocumentValidationError("Invalid session ID.")
 
 
 def validate_pdf(file_path: str, max_pages: int = 20):

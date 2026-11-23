@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
+    "axios": "^1.7.0",
     "react": "^19.2.7",
     "react-circular-progressbar": "^2.2.0",
     "react-dom": "^19.2.7",

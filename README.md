@@ -187,6 +187,9 @@ venv\Scripts\activate
 
 pip install -r requirements.txt
 
+# copy .env.example to .env and add your Groq API key
+copy .env.example .env
+
 uvicorn backend.app.main:app --reload
 ```
 
@@ -260,11 +263,20 @@ The application generates:
 
 # 🧮 Score Calculation
 
-Overall Score is calculated using:
+```text
+Overall = 0.6 x Technical Score + 0.4 x Semantic Score
+```
 
-- Technical Skill Match
-- Semantic Similarity
-- Resume & JD Analysis
+- **Technical Score** = matched skills / skills required by the JD. Skills are
+  extracted from the full resume and JD using the list in `backend/app/core/skills.py`
+  (with aliases such as `sklearn` or `ReactJS`). Skills that are not in the list are
+  not counted, so extend that list for new domains.
+- **Semantic Score** = for every JD chunk, the similarity to its closest resume chunk
+  (embeddings), averaged and scaled to 0-100.
+- If the JD contains no known skills, the overall score uses the semantic score only.
+- The weights can be changed with `SKILL_SCORE_WEIGHT` in `.env` (default `0.6`).
+- The Groq LLM never changes these numbers. It only writes the strengths,
+  weaknesses, suggestions and summary.
 
 ---
 

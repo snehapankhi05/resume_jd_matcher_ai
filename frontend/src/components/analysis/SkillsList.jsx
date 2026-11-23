@@ -1,6 +1,6 @@
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
-function SkillsList({ title, skills, color }) {
+function SkillsList({ title, skills = [], color }) {
   const isGreen = color === "green";
 
   return (
@@ -12,21 +12,43 @@ function SkillsList({ title, skills, color }) {
 
       {skills.length === 0 ? (
 
-        <div className="h-[180px] flex flex-col justify-center items-center text-center">
+        isGreen ? (
 
-          <div className="text-6xl mb-4">
-            🎉
+          <div className="h-[180px] flex flex-col justify-center items-center text-center">
+
+            <div className="text-6xl mb-4">
+              🔍
+            </div>
+
+            <p className="text-xl font-semibold text-gray-600">
+              No Matched Skills
+            </p>
+
+            <p className="text-gray-500 mt-2">
+              None of the skills required by the job description were found in the resume.
+            </p>
+
           </div>
 
-          <p className="text-xl font-semibold text-green-600">
-            No Missing Skills
-          </p>
+        ) : (
 
-          <p className="text-gray-500 mt-2">
-            Excellent! Your resume matches all required skills.
-          </p>
+          <div className="h-[180px] flex flex-col justify-center items-center text-center">
 
-        </div>
+            <div className="text-6xl mb-4">
+              🎉
+            </div>
+
+            <p className="text-xl font-semibold text-green-600">
+              No Missing Skills
+            </p>
+
+            <p className="text-gray-500 mt-2">
+              Excellent! Your resume matches all required skills.
+            </p>
+
+          </div>
+
+        )
 
       ) : (
 

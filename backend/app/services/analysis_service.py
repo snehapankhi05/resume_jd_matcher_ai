@@ -1,43 +1,97 @@
+import logging
+
+from langsmith import traceable
+from langsmith.run_helpers import get_current_run_tree
+
 from backend.app.services.context_service import get_context
 from backend.app.services.skill_service import extract_and_match_skills
 from backend.app.services.scoring_service import calculate_scores
 from backend.app.services.llm_service import generate_analysis
 
+logger = logging.getLogger(__name__)
 
-def analyze_documents(session_id: str):
 
-    query = "skills experience education projects technologies"
+def _annotate_trace(result: dict) -> None:
+    """
+    Put the headline numbers into the trace metadata so runs can be
+    filtered and compared in LangSmith. Never raises: tracing must not
+    break an analysis.
+    """
+    try:
+        run = get_current_run_tree()
 
-    context = get_context(
-        session_id=session_id,
-        query=query
-    )
+        if run is None:
+            return
 
-    resume_context = context["resume_context"]
-    jd_context = context["jd_context"]
+        run.metadata.update({
+            "overall_score": result["overall_score"],
+            "technical_score": result["technical_score"],
+            "semantic_similarity": result["semantic_similarity"],
+            "jd_skill_count": len(result["jd_skills"]),
+            "matched_skill_count": len(result["matched_skills"]),
+            "missing_skill_count": len(result["missing_skills"]),
+            "related_skill_count": len(result.get("related_skills", [])),
+            "domain_match": result["domain_match"],
+            "analysis_confidence": result["analysis_confidence"],
+        })
+    except Exception:
+        logger.debug("Could not annotate trace", exc_info=True)
 
+
+@traceable(
+    name="analyze_documents",
+    run_type="chain",
+    tags=["resume-jd-matcher"],
+)
+def run_analysis(session_id: str, include_context: bool = False):
+    """
+    The full pipeline. With include_context=True the retrieved context that
+    was sent to the LLM is returned too (used by the evaluation harness).
+    """
+
+    context = get_context(session_id=session_id)
+
+    # Skills are extracted from the FULL documents, not only from the
+    # few chunks that are sent to the LLM.
     skills = extract_and_match_skills(
-        resume_context,
-        jd_context
+        context["resume_text"],
+        context["jd_text"]
     )
 
     scores = calculate_scores(
         matched_skills=skills["matched_skills"],
         jd_skills=skills["jd_skills"],
-        resume_text=resume_context,
-        jd_text=jd_context
+        resume_text=context["resume_chunks"],
+        jd_text=context["jd_chunks"],
+        related_skills=skills["related_skills"]
     )
 
     llm_response = generate_analysis(
-        resume_context=resume_context,
-        jd_context=jd_context,
+        resume_context=context["resume_context"],
+        jd_context=context["jd_context"],
         scores=scores,
         matched_skills=skills["matched_skills"],
         missing_skills=skills["missing_skills"]
     )
 
-    return {
+    # Backend-calculated values come last so the LLM output can never
+    # overwrite scores or skill lists.
+    result = {
+        **llm_response,
         **scores,
-        **skills,
-        **llm_response
+        **skills
     }
+
+    _annotate_trace(result)
+
+    if include_context:
+        result["retrieved_context"] = {
+            "resume_context": context["resume_context"],
+            "jd_context": context["jd_context"],
+        }
+
+    return result
+
+
+def analyze_documents(session_id: str):
+    return run_analysis(session_id)

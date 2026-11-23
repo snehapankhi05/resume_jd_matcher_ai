@@ -1,0 +1,90 @@
+import re
+
+from langsmith import traceable
+
+from backend.app.core.skills import (
+    SKILL_ALIASES,
+    SKILL_DISPLAY_NAMES,
+    TECH_SKILLS,
+)
+
+# A skill only matches when it is not glued to other word characters or to
+# "+" / "#". The old "\b...\b" pattern could never match skills ending in a
+# symbol, such as "c++".
+_BEFORE = r"(?<![\w+#])"
+_AFTER = r"(?![\w+#])"
+
+
+def _compile_pattern(skill: str) -> re.Pattern:
+
+    # A single letter is only a skill when written as a capital "C"
+    # (otherwise "(c)" or "plan c" would count as the C language).
+    if skill == "c":
+        return re.compile(r"(?<![\w+#.\-])C(?![\w+#\-])")
+
+    names = sorted(
+        [skill, *SKILL_ALIASES.get(skill, [])],
+        key=len,
+        reverse=True
+    )
+
+    alternatives = "|".join(re.escape(name) for name in names)
+
+    return re.compile(
+        _BEFORE + "(?:" + alternatives + ")" + _AFTER,
+        re.IGNORECASE
+    )
+
+
+_SKILL_PATTERNS = {
+    skill: _compile_pattern(skill)
+    for skill in TECH_SKILLS
+}
+
+
+def normalize_text(text: str) -> str:
+    # PDF extraction often breaks multi-word skills across lines
+    # ("machine\nlearning"), so collapse all whitespace.
+    return re.sub(r"\s+", " ", text)
+
+
+def extract_skills(text: str):
+
+    text = normalize_text(text)
+
+    extracted = set()
+
+    for skill, pattern in _SKILL_PATTERNS.items():
+
+        if pattern.search(text):
+            extracted.add(
+                SKILL_DISPLAY_NAMES.get(skill, skill.title())
+            )
+
+    return sorted(extracted)
+
+
+@traceable(name="extract_and_match_skills", run_type="tool")
+def extract_and_match_skills(
+    resume_text: str,
+    jd_text: str
+):
+
+    resume_skills = set(extract_skills(resume_text))
+
+    jd_skills = set(extract_skills(jd_text))
+
+    matched_skills = sorted(
+        resume_skills.intersection(jd_skills)
+    )
+
+    missing_skills = sorted(
+        jd_skills - resume_skills
+    )
+
+    return {
+        "resume_skills": sorted(resume_skills),
+        "jd_skills": sorted(jd_skills),
+        "matched_skills": matched_skills,
+        "missing_skills": missing_skills
+    }

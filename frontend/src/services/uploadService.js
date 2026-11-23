@@ -1,5 +1,20 @@
 import api from "../api/api";
 
+// Axios sets the multipart Content-Type (including the required boundary)
+// automatically for FormData. Setting it by hand removes the boundary.
+
+function reportProgress(progressEvent, onUploadProgress) {
+
+    // `total` is undefined when the browser cannot compute it.
+    if (!onUploadProgress || !progressEvent.total) {
+        return;
+    }
+
+    onUploadProgress(
+        Math.round((progressEvent.loaded * 100) / progressEvent.total)
+    );
+}
+
 export async function uploadResume(file, onUploadProgress) {
 
     const formData = new FormData();
@@ -10,25 +25,13 @@ export async function uploadResume(file, onUploadProgress) {
         "/upload/resume",
         formData,
         {
-            headers: {
-                "Content-Type": "multipart/form-data"
-            },
-
-            onUploadProgress: (progressEvent) => {
-
-                const percent = Math.round(
-                    (progressEvent.loaded * 100) /
-                    progressEvent.total
-                );
-
-                onUploadProgress(percent);
-            }
+            onUploadProgress: (progressEvent) =>
+                reportProgress(progressEvent, onUploadProgress),
         }
     );
 
     return response.data;
 }
-
 
 
 export async function uploadJD(
@@ -46,19 +49,8 @@ export async function uploadJD(
         "/upload/jd",
         formData,
         {
-            headers: {
-                "Content-Type": "multipart/form-data"
-            },
-
-            onUploadProgress: (progressEvent) => {
-
-                const percent = Math.round(
-                    (progressEvent.loaded * 100) /
-                    progressEvent.total
-                );
-
-                onUploadProgress(percent);
-            }
+            onUploadProgress: (progressEvent) =>
+                reportProgress(progressEvent, onUploadProgress),
         }
     );
 

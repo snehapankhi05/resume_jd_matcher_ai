@@ -2,9 +2,9 @@ fastapi
 uvicorn
 python-dotenv
 pydantic
+pydantic-settings
 python-multipart
 
-langchain
 langchain-community
 langchain-core
 langchain-chroma
@@ -15,15 +15,12 @@ langchain-text-splitters
 chromadb
 
 sentence-transformers
-transformers
-torch
 
 pypdf
 rank-bm25
 
 scikit-learn
 numpy
-pandas
 
-python-jose
-passlib[bcrypt]
+# Observability + evaluation
+langsmith>=0.3
